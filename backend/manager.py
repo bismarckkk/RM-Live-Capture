@@ -1,6 +1,7 @@
 from typing import List, Dict, Union
 import asyncio
 import json
+import asyncio
 
 import aiohttp
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -112,6 +113,7 @@ class Manager:
                 for downloader in self.downloaders.values():
                     if downloader is not None:
                         await downloader.start(self.round)
+                        await asyncio.sleep(0.5)
                 self.status = "STARTED"
             else:
                 for downloader in self.downloaders.values():
