@@ -1,0 +1,4 @@
+aiohttp
+apscheduler
+pydantic
+fastapi
