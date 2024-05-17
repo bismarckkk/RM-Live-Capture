@@ -10,6 +10,7 @@ from apscheduler.job import Job
 from pydantic import BaseModel
 
 import config
+from logger import getLogger
 
 
 name_regex = re.compile(r"/(\d+_\d+)\.ts")
@@ -38,7 +39,7 @@ class Downloader:
         self.id = random.randint(0, 100000)
         self.cid = -1
         self.rid = 1
-        self.title = "NullVsNull"
+        self.title = "Null Vs Null R0"
         self.processing = False
         self.url = url
         self.error_count = 0
@@ -51,6 +52,7 @@ class Downloader:
 
         self.segments: List[Segment] = []
         self.job: Union[Job, None] = None
+        self.logger = getLogger(f"Downloader-{self.name}", "INFO")
         
     async def start(self, info: RoundInfo):
         if self.job is not None:
@@ -58,11 +60,13 @@ class Downloader:
         self.cid = info.id
         self.rid = info.round
         self.title = f"{info.red} Vs {info.blue} {self.name} R{info.round}"
-        self.job = self.scheduler.add_job(self._get_m3u8_info, "interval", seconds=3)
+        self.job = self.scheduler.add_job(self._get_m3u8_info, "interval", seconds=3, max_instances=2)
+        self.logger.info(f"Start {self.name} {self.title}")
 
     async def split(self):
         await self.end()
-        self.job = self.scheduler.add_job(self._get_m3u8_info, "interval", seconds=3)
+        self.job = self.scheduler.add_job(self._get_m3u8_info, "interval", seconds=3, max_instances=2)
+        self.logger.info(f"Split {self.name} {self.title}")
 
     async def end(self):
         self.job.remove()
@@ -70,11 +74,13 @@ class Downloader:
             await asyncio.sleep(1)
         await self._save()
         self.segments = []
+        self.logger.info(f"End {self.name} {self.title}")
 
     async def close(self):
         await self.end()
         await self.connector.close()
         await self.session.close()
+        self.logger.info(f"Close {self.name}")
 
     async def _save(self):
         if not self.segments:
@@ -82,10 +88,13 @@ class Downloader:
         with open(config.save_dir / f"{self.id}_{self.cid}_{self.rid}_{int(time.time())}.m3u8", "w") as f:
             f.write("#EXTM3U\n")
             f.write("#EXT-X-TARGETDURATION:4\n")
+            f.write("#EXT-X-PLAYLIST-TYPE:VOD\n")
             f.write(f"#TITLE:{self.title} {int(time.time())}\n")
             for segment in self.segments:
-                f.write(f"#EXTINF:{segment.duration}\n")
+                f.write(f"#EXTINF:{segment.duration},\n")
                 f.write(f"{self._get_segment_name(segment)}\n")
+            f.write("#EXT-X-ENDLIST\n")
+        self.logger.info(f"Save {self.name} {self.title}")
 
     async def _get_m3u8_info(self):
         if self.processing:
@@ -109,26 +118,27 @@ class Downloader:
                 await self.split()
             self.processing = False
         except aiohttp.ClientResponseError as e:
+            self.logger.error(f"Error {e.status} on {self.name}")
             if e.status == 404:
                 await self.end()
             else:
                 self.error_count += 1
                 if self.error_count > config.max_error_count:
-                    print(f"Error count exceed {config.max_error_count} on {self.name}")
+                    self.logger.fatal(f"Error count exceed {config.max_error_count} on {self.name}")
                     self.error_count = 0
                     await self.split()
         except Exception as e:
-            print(e)
+            self.logger.error(f"Error {e} on {self.name}")
             
     def _get_segment_name(self, segment: Segment):
         id_ = name_regex.findall(segment.uri)[0]
-        return f"{self.id}_{self.cid}_{self.rid}_{id_}.ts"
+        return f"{self.id}_{self.cid}_{self.rid}-{id_}.ts"
                     
     async def _download_segment(self, segment: Segment):
         already = [s.uri for s in self.segments[-5:]]
         if segment.uri in already:
             return
-        print(f"Downloading {segment.uri}")
+        self.logger.debug(f"Downloading {segment.uri}")
         async with self.session.get(f"https://rtmp.djicdn.com/robomaster/{segment.uri}") as response:
             filename = config.save_dir / self._get_segment_name(segment)
             with open(filename, "wb") as f:
@@ -143,10 +153,10 @@ class Downloader:
                 try:
                     await self._download_segment(segment)
                 except aiohttp.ClientResponseError as e:
-                    print(e.status, e.message)
+                    self.logger.error(e.status, e.message)
                     self.error_count += 1
                 except Exception as e:
-                    print(e)
+                    self.logger.error(e)
 
 
 if __name__ == "__main__":
