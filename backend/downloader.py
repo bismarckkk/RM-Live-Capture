@@ -99,6 +99,7 @@ class Downloader:
     async def _get_m3u8_info(self):
         if self.processing:
             self.error_count += 1
+            self.logger.error(f"M3U8 processing timeout")
             return
         try:
             self.processing = True
@@ -131,8 +132,8 @@ class Downloader:
             self.logger.error(f"Error {e} on {self.name}")
             
     def _get_segment_name(self, segment: Segment):
-        id_ = name_regex.findall(segment.uri)[0]
-        return f"{self.id}_{self.cid}_{self.rid}-{id_}.ts"
+        id_ = name_regex.findall(segment.uri)[0].replace("_", "-")
+        return f"{self.id}_{self.cid}_{self.rid}_{id_}.ts"
                     
     async def _download_segment(self, segment: Segment):
         already = [s.uri for s in self.segments[-5:]]

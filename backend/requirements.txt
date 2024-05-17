@@ -3,3 +3,4 @@ apscheduler
 pydantic
 fastapi
 uvicorn
+colorlog

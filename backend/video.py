@@ -40,7 +40,7 @@ def get_video_list() -> List[Video]:
 def convert_to_mp4(video: Video):
     import ffmpeg
     ffmpeg.input(str(config.save_dir / video.file_name)).output(
-        str(config.save_dir / f"{video.file_name}.mp4"),
+        str(config.save_dir / f"{video.title} {video.file_name.split('_')[-1]}.mp4"),
         acodec="copy", vcodec="copy"
     ).run(overwrite_output=True)
 
