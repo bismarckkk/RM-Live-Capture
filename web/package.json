@@ -1,0 +1,23 @@
+{
+  "private": true,
+  "author": "bismarckkk <zuoqingyu@nuaa.edu.cn>",
+  "scripts": {
+    "dev": "umi dev",
+    "build": "umi build",
+    "postinstall": "umi setup",
+    "setup": "umi setup",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "@ant-design/pro-components": "^2.7.1",
+    "@umijs/plugins": "^4.2.5",
+    "antd": "^5.17.2",
+    "axios": "^1.6.8",
+    "umi": "^4.2.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.33",
+    "@types/react-dom": "^18.0.11",
+    "typescript": "^5.0.3"
+  }
+}
