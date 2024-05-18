@@ -52,13 +52,14 @@ class Downloader:
 
         self.segments: List[Segment] = []
         self.job: Union[Job, None] = None
-        self.logger = getLogger(f"Downloader-{self.name}", "INFO")
+        self.logger = getLogger(f"DL-{self.name}", "INFO")
         
     async def start(self, info: RoundInfo):
         if self.job is not None:
             await self.end()
         self.cid = info.id
         self.rid = info.round
+        self.segments = []
         self.title = f"{info.red} Vs {info.blue} {self.name} R{info.round}"
         self.job = self.scheduler.add_job(self._get_m3u8_info, "interval", seconds=3, max_instances=2)
         self.logger.info(f"Start {self.name} {self.title}")
@@ -69,7 +70,9 @@ class Downloader:
         self.logger.info(f"Split {self.name} {self.title}")
 
     async def end(self):
-        self.job.remove()
+        if self.job is not None:
+            self.job.remove()
+            self.job = None
         while self.processing:
             await asyncio.sleep(1)
         await self._save()
