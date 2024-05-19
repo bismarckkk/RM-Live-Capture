@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 import config
 from range_response import RangeResponse
 from manager import Manager, get_live_info, LiveStreamReq
-from video import get_video_list, get_video_info, convert_to_mp4, delete_file
+from video import filter_video_list, VideoFilterProps, get_video_info, convert_to_mp4, delete_file
 
 
 @asynccontextmanager
@@ -71,9 +71,9 @@ async def update_manager(role: str, quality: str):
     return manager.get()
 
 
-@app.get("/api/video/list")
-async def get_video():
-    return get_video_list()
+@app.post("/api/video/list")
+async def get_video(props: VideoFilterProps):
+    return filter_video_list(**props.dict())
 
 
 @app.get("/api/video/convert/{file_name}")

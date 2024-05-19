@@ -64,10 +64,21 @@ async def get_live_info() -> LiveInfo:
                 "live": False,
                 "streams": {}
             }
+            ok = False
             for live_info in data:
                 if live_info['liveState'] != 1 or live_info['matchState'] != 1:
                     continue
+                ok = True
                 info['live'] = True
+                mainStream = live_string_to_dict(live_info['zoneLiveString'])
+                if mainStream:
+                    info['streams']['主视角'] = mainStream
+                for fpv in live_info['fpvData']:
+                    stream = live_string_to_dict(fpv['sources'])
+                    if stream:
+                        info['streams'][fpv['role']] = stream
+            if not ok:
+                live_info = data[0]
                 mainStream = live_string_to_dict(live_info['zoneLiveString'])
                 if mainStream:
                     info['streams']['主视角'] = mainStream
@@ -115,6 +126,18 @@ class Manager:
                     self.downloaders[req.role] = Downloader(req.role, stream, self.scheduler)
                 else:
                     self.downloaders[req.role].url = stream
+        if not live_info.live:
+            if self.status == 'STARTED':
+                for downloader in self.downloaders.values():
+                    if downloader is not None:
+                        await downloader.end()
+                self.status = "IDLE"
+                self.round = await get_round_info()
+            self.job.reschedule(trigger="interval", seconds=120)
+        else:
+            if self.status == 'IDLE':
+                self.round.status = 'IDLE'
+            self.job.reschedule(trigger="interval", seconds=10)
 
         round_ = await get_round_info()
         if self.round is None or round_ != self.round:
@@ -159,7 +182,7 @@ class Manager:
             json.dump(self.reqs, f)
 
     async def delete_req(self, role: str):
-        downloader = self.downloaders.get(role)
+        downloader = self.downloaders.get(role, None)
         if downloader is not None:
             await downloader.close()
             del self.downloaders[role]

@@ -2,6 +2,7 @@ from typing import List, Union
 import asyncio
 
 from pydantic import BaseModel
+import cachetools.func
 
 import config
 
@@ -13,6 +14,14 @@ class Video(BaseModel):
     role: str
     round: int
     file_name: str
+
+
+class VideoFilterProps(BaseModel):
+    red: Union[str, None] = None
+    blue: Union[str, None] = None
+    role: Union[str, None] = None
+    current: int
+    pageSize: int
 
 
 def get_video_info(file_name: str) -> Union[Video, None]:
@@ -35,13 +44,29 @@ def get_video_info(file_name: str) -> Union[Video, None]:
     )
 
 
+@cachetools.func.ttl_cache(maxsize=1, ttl=30)
 def get_video_list() -> List[Video]:
     res = []
     for it in config.save_dir.glob("*.m3u8"):
         _video = get_video_info(it.name)
         if _video is not None:
             res.append(_video)
+    res = sorted(res, key=lambda video: video.file_name.split('_')[-1].split('.')[0])
     return res
+
+
+def filter_video_list(current: int, pageSize: int, **kwargs):
+    res = get_video_list()
+    total = len(res)
+    if kwargs.get('red') is not None:
+        res = [video for video in res if video.red == kwargs['red']]
+    if kwargs.get('blue') is not None:
+        res = [video for video in res if video.blue == kwargs['blue']]
+    if kwargs.get('role') is not None:
+        res = [video for video in res if video.role == kwargs['role']]
+    start = (current - 1) * pageSize
+    end = start + pageSize
+    return {"data": res[start:end], "total": total}
 
 
 async def convert_to_mp4(_video: Video):

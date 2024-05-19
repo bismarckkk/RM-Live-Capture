@@ -8,10 +8,10 @@ export default defineConfig({
         '@umijs/plugins/dist/antd',
     ],
     antd: {},
-    title: 'RM Recorder',
+    title: 'RM Live Capture',
     proxy: {
         '/api': {
-            'target': 'http://192.168.1.4:10398/',
+            'target': 'http://127.0.0.1:10398/',
             'changeOrigin': true,
         },
     },
