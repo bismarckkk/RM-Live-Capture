@@ -5,7 +5,8 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Path, Request
-from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, RedirectResponse
 
 import config
 from range_response import RangeResponse
@@ -24,6 +25,9 @@ manager = Manager()
 path_regex = re.compile(r"^\d+_\d+_\d+_\d+\.m3u8$")
 path_f_regex = re.compile(r"^\d+_\d+_\d+_\d+-\d+\.ts$")
 
+staticFiles = StaticFiles(directory='static')
+app.mount("/static", staticFiles, name="static")
+
 
 def check_permission(info):
     info = info.replace("Basic ", "")
@@ -41,6 +45,11 @@ async def check_auth(request: Request, call_next):
         if not check_permission(request.headers["Authorization"]):
             return JSONResponse(None, 401, {"WWW-Authenticate": "Basic"})
     return await call_next(request)
+
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/static/index.html")
 
 
 @app.get("/api/manager")
