@@ -57,13 +57,13 @@ def get_video_list() -> List[Video]:
 
 def filter_video_list(current: int, pageSize: int, **kwargs):
     res = get_video_list()
-    total = len(res)
     if kwargs.get('red') is not None:
         res = [video for video in res if video.red == kwargs['red']]
     if kwargs.get('blue') is not None:
         res = [video for video in res if video.blue == kwargs['blue']]
     if kwargs.get('role') is not None:
         res = [video for video in res if video.role == kwargs['role']]
+    total = len(res)
     start = (current - 1) * pageSize
     end = start + pageSize
     return {"data": res[start:end], "total": total}
@@ -81,7 +81,7 @@ async def convert_to_mp4(_video: Video):
 
 
 def delete_file(_video: Video):
-    with open(config.save_dir / _video.file_name, 'r') as f:
+    with open(config.save_dir / _video.file_name, 'r', encoding="utf-8") as f:
         lines = f.readlines()
         for i in range(len(lines)):
             if lines[i].startswith("#EXTINF"):
@@ -89,6 +89,7 @@ def delete_file(_video: Video):
                 if file.exists():
                     file.unlink()
     (config.save_dir / _video.file_name).unlink()
+    get_video_list.cache_clear()
 
 
 if __name__ == '__main__':

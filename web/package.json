@@ -13,6 +13,7 @@
     "@umijs/plugins": "^4.2.5",
     "antd": "^5.17.2",
     "axios": "^1.6.8",
+    "hls.js": "^1.5.8",
     "umi": "^4.2.5"
   },
   "devDependencies": {

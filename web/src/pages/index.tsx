@@ -97,9 +97,8 @@ class Index extends Component {
 
     async deleteDownloader(role: string) {
         confirm({
-            title: 'Do you want to delete these items?',
+            title: 'Do you want to delete this Downloader?',
             icon: <ExclamationCircleFilled />,
-            content: 'Some descriptions',
             onOk() {
                 console.log('delete', role);
             },

@@ -4580,6 +4580,11 @@ history@5.3.0, history@^5.2.0:
   dependencies:
     "@babel/runtime" "^7.7.6"
 
+hls.js@^1.5.8:
+  version "1.5.8"
+  resolved "https://registry.npmmirror.com/hls.js/-/hls.js-1.5.8.tgz#73c3d2984a56f103e6900bf7a5e65b288dba846e"
+  integrity sha512-hJYMPfLhWO7/7+n4f9pn6bOheCGx0WgvVz7k3ouq3Pp1bja48NN+HeCQu3XCGYzqWQF/wo7Sk6dJAyWVJD8ECA==
+
 hmac-drbg@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmmirror.com/hmac-drbg/-/hmac-drbg-1.0.1.tgz#d2745701025a6c775a6c545793ed502fc0c649a1"

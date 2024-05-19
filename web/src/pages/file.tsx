@@ -1,6 +1,12 @@
-import type { ProColumns } from '@ant-design/pro-components';
+import { useRef } from "react";
+import type { ProColumns, ActionType } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
-import { Space } from 'antd';
+import { Space, message } from 'antd';
+import ConvertButton from "@/components/convertButton";
+import DownloadButton from "@/components/downloadButton";
+import OptionsAction from "@/components/optionsAction";
+import { Link } from "umi";
+
 import axios from "axios";
 
 export const waitTimePromise = async (time: number = 100) => {
@@ -14,6 +20,11 @@ export const waitTimePromise = async (time: number = 100) => {
 export const waitTime = async (time: number = 100) => {
     await waitTimePromise(time);
 };
+
+interface ApiResult {
+    code: number;
+    msg: string;
+}
 
 interface VideoItem {
     title: string;
@@ -68,43 +79,41 @@ const columns: ProColumns<VideoItem>[] = [
         title: 'Action',
         valueType: 'option',
         key: 'option',
-        width: 250,
-        render: (_, record) => <Space size="middle">
+        width: 300,
+        render: (_, record, __, action) => <Space size="middle">
+            <ConvertButton filename={record.file_name}/>
             <a
-                onClick={() => {
-                    console.log('convert to mp4', record.file_name)
-                }}
-            >
-                To MP4
-            </a>
-            <a
-                onClick={() => {
-                    console.log('Delete', record.file_name)
+                onClick={async () => {
+                    try {
+                        const data = await axios.get<ApiResult>(`/api/video/delete/${record.file_name}`);
+                        if (data.data.code !== 0) {
+                            message.error(data.data.msg);
+                        } else {
+                            action?.reload();
+                        }
+                    } catch (_) {
+
+                    }
                 }}
             >
                 Delete
             </a>
-            <a
-                onClick={() => {
-                    console.log('Download', record.file_name)
-                }}
-            >
-                Download
-            </a>
-            <a
-                onClick={() => {
-                    console.log('Play', record.file_name)
-                }}
+            <DownloadButton filename={record.file_name} title={record.title}/>
+            <Link
+                target="_blank"
+                to={`/play?fn=${record.file_name}`}
             >
                 Play
-            </a>
+            </Link>
         </Space>,
     },
 ];
 
 export default () => {
+    const actionRef = useRef<ActionType>();
     return (
         <ProTable<VideoItem>
+            actionRef={actionRef}
             columns={columns}
             request={async (params) => {
                 let data = (await axios.post('/api/video/list', params)).data;
@@ -125,6 +134,32 @@ export default () => {
             pagination={{
                 defaultPageSize: 15,
                 pageSizeOptions: [10, 15, 20, 100]
+            }}
+            rowSelection={{}}
+            tableAlertRender={({
+                selectedRowKeys,
+                selectedRows,
+                onCleanSelected,
+            }) => {
+                return (
+                    <span>
+                      已选 {selectedRowKeys.length} 项
+                      <a style={{marginInlineStart: 8}} onClick={onCleanSelected}>
+                        取消选择
+                      </a>
+                    </span>
+                );
+            }}
+            tableAlertOptionRender={({
+                 selectedRows,
+                 onCleanSelected,
+            }) => {
+                return (
+                    <OptionsAction rows={selectedRows} reload={() => {
+                        onCleanSelected();
+                        actionRef.current?.reload();
+                    }} />
+                );
             }}
         />
     );

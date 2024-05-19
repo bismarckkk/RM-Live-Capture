@@ -9,6 +9,7 @@ const { Header, Content, Footer } = Layout;
 const menuItems = [
     { key: '/', label: 'Downloader' },
     { key: '/file', label: 'Files' },
+    { key: '/play', label: 'Play' },
 ]
 
 const App: React.FC = () => {

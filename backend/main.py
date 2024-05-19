@@ -82,7 +82,9 @@ async def convert_video(file_name: str = Path()):
         return JSONResponse({"code": -1, "msg": "Illegal file name"}, 400)
     if not (config.save_dir / file_name).exists():
         return JSONResponse({"code": 2, "msg": "M3U8 file not exist."}, 404)
-    await convert_to_mp4(get_video_info(file_name))
+    mp4 = config.mp4_dir / f"{get_video_info(file_name).title}.mp4"
+    if not mp4.exists():
+        await convert_to_mp4(get_video_info(file_name))
     return {"code": 0}
 
 
@@ -112,9 +114,10 @@ async def download_video(request: Request, file_name: str = Path()):
         return JSONResponse({"code": -1, "msg": "Illegal file name"}, 400)
     if not (config.save_dir / file_name).exists():
         return JSONResponse({"code": 2, "msg": "M3U8 file not exist."}, 404)
-    if not (config.mp4_dir / f"{file_name.split('.')[0]}.mp4").exists():
+    mp4 = config.mp4_dir / f"{get_video_info(file_name).title}.mp4"
+    if not mp4.exists():
         return JSONResponse({"code": 1, "msg": "MP4 file not created"}, 404)
-    return RangeResponse(request, str(config.mp4_dir / f"{file_name.split('.')[0]}.mp4"), "video/mp4")
+    return RangeResponse(request, str(mp4), "video/mp4")
 
 
 if __name__ == '__main__':
