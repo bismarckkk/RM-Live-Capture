@@ -8,32 +8,8 @@ import OptionsAction from "@/components/optionsAction";
 import { Link } from "umi";
 
 import axios from "axios";
+import { VideoItem, ApiResult } from "@/utils";
 
-export const waitTimePromise = async (time: number = 100) => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(true);
-        }, time);
-    });
-};
-
-export const waitTime = async (time: number = 100) => {
-    await waitTimePromise(time);
-};
-
-interface ApiResult {
-    code: number;
-    msg: string;
-}
-
-interface VideoItem {
-    title: string;
-    red: string;
-    blue: string;
-    role: string;
-    round: number;
-    file_name: string;
-}
 
 const roles = [
     '主视角', '红方英雄', '蓝方英雄', '红方工程', '蓝方工程', '红方3号步兵',
@@ -76,6 +52,20 @@ const columns: ProColumns<VideoItem>[] = [
         }, {})
     },
     {
+        title: 'Duration',
+        dataIndex: 'duration',
+        search: false,
+        sorter: true,
+        renderText: (text) => {
+            const minutes = Math.floor(text / 60);
+            let seconds = (text % 60).toString();
+            if (seconds.length === 1) {
+                seconds = '0' + seconds;
+            }
+            return `${minutes}:${seconds}`;
+        }
+    },
+    {
         title: 'Action',
         valueType: 'option',
         key: 'option',
@@ -115,7 +105,8 @@ export default () => {
         <ProTable<VideoItem>
             actionRef={actionRef}
             columns={columns}
-            request={async (params) => {
+            request={async (params, sort) => {
+                params.sort = sort;
                 let data = (await axios.post('/api/video/list', params)).data;
                 data.success = true;
                 return data;

@@ -1,22 +1,8 @@
 import {useState} from 'react';
 import { Space, Progress, Button, message } from "antd";
 
-
 import axios from "axios";
-
-interface VideoItem {
-    title: string;
-    red: string;
-    blue: string;
-    role: string;
-    round: number;
-    file_name: string;
-}
-
-interface ApiResult {
-    code: number;
-    msg: string;
-}
+import { VideoItem, ApiResult } from "@/utils";
 
 function OptionsAction({rows, reload}: {rows: VideoItem[], reload: () => void}) {
     const [current, setCurrent] = useState(-1);

@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Dict
 import asyncio
 
 from pydantic import BaseModel
@@ -13,6 +13,7 @@ class Video(BaseModel):
     blue: str
     role: str
     round: int
+    duration: float
     file_name: str
 
 
@@ -22,15 +23,18 @@ class VideoFilterProps(BaseModel):
     role: Union[str, None] = None
     current: int
     pageSize: int
+    sort: Dict[str, str] = {}
 
 
 def get_video_info(file_name: str) -> Union[Video, None]:
     title = "Null Vs Null"
+    duration = 0.
     with (config.save_dir / file_name).open('r', encoding="utf-8") as f:
         for line in f.readlines():
             if line.startswith("#TITLE:"):
                 title = line.replace("#TITLE:", "").strip()
-                break
+            if line.startswith("#EXTINF:"):
+                duration += float(line.split(":")[1].split(",")[0])
     items = title.split(" ")
     if len(items) != 6:
         return None
@@ -40,6 +44,7 @@ def get_video_info(file_name: str) -> Union[Video, None]:
         blue=items[2],
         role=items[3],
         round=int(items[4][1:]),
+        duration=duration,
         file_name=file_name
     )
 
@@ -63,6 +68,8 @@ def filter_video_list(current: int, pageSize: int, **kwargs):
         res = [video for video in res if video.blue == kwargs['blue']]
     if kwargs.get('role') is not None:
         res = [video for video in res if video.role == kwargs['role']]
+    for key, value in kwargs.get('sort', {}).items():
+        res = sorted(res, key=lambda video: getattr(video, key), reverse=(value == "desc"))
     total = len(res)
     start = (current - 1) * pageSize
     end = start + pageSize

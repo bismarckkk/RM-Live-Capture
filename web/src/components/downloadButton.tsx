@@ -2,11 +2,7 @@ import React, { useState, useRef } from 'react';
 import {Button, message} from "antd";
 
 import axios from "axios";
-
-interface ApiResult {
-    code: number;
-    msg: string;
-}
+import { ApiResult } from "@/utils";
 
 function DownloadButton({filename = "", title = ""}) {
     const [loading, setLoading] = useState(false);
