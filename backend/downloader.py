@@ -75,13 +75,13 @@ class Downloader:
 
     async def end(self):
         if self.job is not None:
+            self.logger.info(f"End {self.name} {self.title}")
             self.job.remove()
             self.job = None
         while self.processing:
             await asyncio.sleep(1)
         await self._save()
         self.segments = []
-        self.logger.info(f"End {self.name} {self.title}")
 
     async def close(self):
         await self.end()

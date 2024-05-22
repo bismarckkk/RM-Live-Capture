@@ -2,8 +2,8 @@ from pathlib import Path
 
 port = 10398
 
-save_dir = Path('data')
-mp4_dir = Path('out')
+save_dir = Path('z:/rmuc record/data')
+mp4_dir = Path('z:/rmuc record/out')
 
 max_error_count = 20
 headers = {

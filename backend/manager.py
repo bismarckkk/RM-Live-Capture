@@ -196,7 +196,7 @@ class Manager:
             else:
                 downloaders.append(DownloaderInfo(
                     name=role,
-                    status=(self.round.status == 'STARTED'),
+                    status=(self.round.status == 'STARTED' and len(downloader.segments) > 0),
                     error_count=downloader.error_count,
                     quality=self.get_req(role).quality,
                     recorded=round(sum([it.duration for it in downloader.segments]))

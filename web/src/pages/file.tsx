@@ -124,7 +124,6 @@ export default () => {
             rowSelection={{}}
             tableAlertRender={({
                 selectedRowKeys,
-                selectedRows,
                 onCleanSelected,
             }) => {
                 return (
