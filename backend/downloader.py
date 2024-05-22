@@ -45,6 +45,7 @@ class Downloader:
         self.error_count = 0
         self.scheduler = scheduler
         self.connector = aiohttp.TCPConnector(limit=4)
+        self.start_time = time.time()
         self.session = aiohttp.ClientSession(
             connector=self.connector,
             headers=config.headers
@@ -60,6 +61,7 @@ class Downloader:
         self.cid = info.id
         self.rid = info.round
         self.segments = []
+        self.start_time = time.time()
         self.title = f"{info.red} Vs {info.blue} {self.name} R{info.round}"
         self.job = self.scheduler.add_job(self._get_m3u8_info, "interval", seconds=3)
         self.logger.info(f"Start {self.name} {self.title}")
@@ -67,6 +69,7 @@ class Downloader:
 
     async def split(self):
         await self.end()
+        self.start_time = time.time()
         self.job = self.scheduler.add_job(self._get_m3u8_info, "interval", seconds=3)
         self.logger.info(f"Split {self.name} {self.title}")
 
@@ -89,7 +92,7 @@ class Downloader:
     async def _save(self):
         if not self.segments:
             return
-        with open(config.save_dir / f"{self.id}_{self.cid}_{self.rid}_{int(time.time())}.m3u8", "w") as f:
+        with open(config.save_dir / f"{self.id}_{self.cid}_{self.rid}_{int(self.start_time)}.m3u8", "w") as f:
             f.write("#EXTM3U\n")
             f.write("#EXT-X-TARGETDURATION:4\n")
             f.write("#EXT-X-PLAYLIST-TYPE:VOD\n")

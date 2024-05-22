@@ -6,6 +6,8 @@ import aiohttp
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.job import Job
 from pydantic import BaseModel
+from asyncache import cached
+from cachetools import TTLCache
 
 import config
 from downloader import Downloader, RoundInfo
@@ -62,6 +64,7 @@ def live_string_to_dict(live_string: List) -> Dict[str, str]:
     return res
 
 
+@cached(TTLCache(1, 5))
 async def get_live_info() -> LiveInfo:
     async with aiohttp.ClientSession(headers=config.oss_headers) as session:
         async with session.get(config.live_info_url) as response:

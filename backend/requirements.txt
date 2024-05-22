@@ -5,3 +5,4 @@ fastapi
 uvicorn
 colorlog
 cachetools
+asyncache

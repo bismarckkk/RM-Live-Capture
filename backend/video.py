@@ -56,7 +56,7 @@ def get_video_list() -> List[Video]:
         _video = get_video_info(it.name)
         if _video is not None:
             res.append(_video)
-    res = sorted(res, key=lambda video: video.file_name.split('_')[-1].split('.')[0])
+    res = sorted(res, key=lambda video: video.file_name.split('_')[-1].split('.')[0], reverse=True)
     return res
 
 
@@ -69,7 +69,7 @@ def filter_video_list(current: int, pageSize: int, **kwargs):
     if kwargs.get('role') is not None:
         res = [video for video in res if video.role == kwargs['role']]
     for key, value in kwargs.get('sort', {}).items():
-        res = sorted(res, key=lambda video: getattr(video, key), reverse=(value == "desc"))
+        res = sorted(res, key=lambda video: getattr(video, key), reverse=(value == "descend"))
     total = len(res)
     start = (current - 1) * pageSize
     end = start + pageSize

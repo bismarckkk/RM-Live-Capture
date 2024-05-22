@@ -87,13 +87,14 @@ class Index extends Component {
     async componentDidMount() {
         await this.refresh();
         if (!this.timer) {
-            this.timer = setInterval(this.refresh.bind(this), 10000);
+            this.timer = setInterval(this.refresh.bind(this), 3000);
         }
     }
 
     async componentWillUnmount() {
         if (this.timer) {
             clearInterval(this.timer);
+            this.timer = null;
         }
     }
 
