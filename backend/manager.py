@@ -26,6 +26,7 @@ class DownloaderInfo(BaseModel):
     name: str
     status: bool
     error_count: int
+    quality: str = "None"
 
 
 class ManagerInfo(BaseModel):
@@ -95,7 +96,7 @@ class Manager:
             reqs = []
             if config.reqs_json.exists():
                 with open(config.reqs_json, "r") as f:
-                    reqs = json.load(f)
+                    reqs = [LiveStreamReq(**it) for it in json.load(f)]
         self.downloaders: Dict[str, Union[Downloader, None]] = {}
         self.scheduler = AsyncIOScheduler()
         self.scheduler.start()
@@ -135,7 +136,7 @@ class Manager:
                 self.round = await get_round_info()
             self.job.reschedule(trigger="interval", seconds=120)
         else:
-            if self.status == 'IDLE':
+            if self.status == 'IDLE' and self.round is not None:
                 self.round.status = 'IDLE'
             self.job.reschedule(trigger="interval", seconds=10)
 
@@ -166,6 +167,12 @@ class Manager:
         self.scheduler.shutdown()
         self.logger.info("Manager closed")
 
+    def get_req(self, role: str) -> Union[LiveStreamReq, None]:
+        for req in self.reqs:
+            if req.role == role:
+                return req
+        return None
+
     def get(self) -> ManagerInfo:
         downloaders = []
         for role, downloader in self.downloaders.items():
@@ -173,13 +180,17 @@ class Manager:
                 downloaders.append(DownloaderInfo(name=role, status=False, error_count=0))
             else:
                 downloaders.append(DownloaderInfo(
-                    name=role, status=(self.round.status == 'STARTED'), error_count=downloader.error_count)
+                    name=role,
+                    status=(self.round.status == 'STARTED'),
+                    error_count=downloader.error_count,
+                    quality=self.get_req(role).quality)
                 )
         return ManagerInfo(round_info=self.round, downloaders=downloaders)
 
     def _save_reqs(self):
+        reqs = [it.dict() for it in self.reqs]
         with open(config.reqs_json, "w") as f:
-            json.dump(self.reqs, f)
+            json.dump(reqs, f)
 
     async def delete_req(self, role: str):
         downloader = self.downloaders.get(role, None)
@@ -188,17 +199,20 @@ class Manager:
             del self.downloaders[role]
         self.reqs = [req for req in self.reqs if req.role != role]
         self._save_reqs()
+        await self.scan()
 
-    def add_req(self, req: LiveStreamReq):
+
+    async def add_req(self, req: LiveStreamReq):
         if req.role in self.downloaders:
             return
         self.reqs.append(req)
         self._save_reqs()
+        await self.scan()
 
     async def update_req(self, role: str, quality: str):
         req = LiveStreamReq(role=role, quality=quality)
         await self.delete_req(role)
-        self.add_req(req)
+        await self.add_req(req)
 
 
 if __name__ == '__main__':

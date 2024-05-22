@@ -13,6 +13,7 @@ interface Downloader {
     name: string;
     status: boolean;
     error_count: number;
+    quality: string;
 }
 
 interface RoundInfo {
@@ -63,10 +64,10 @@ class Index extends Component {
     }
 
     streamModal = createRef<StreamModal>();
+    timer: NodeJS.Timeout | null = null;
 
     async refresh() {
         try {
-            this.setState({loading: true})
             const managerInfo = await axios.get<ManagerInfo>("/api/manager");
             const liveInfo = await axios.get<LiveInfo>("/api/manager/live");
             this.setState({
@@ -83,24 +84,34 @@ class Index extends Component {
 
     async componentDidMount() {
         await this.refresh();
+        this.timer = setInterval(this.refresh.bind(this), 10000);
     }
 
     async addDownloader() {
         const req = await this.streamModal.current?.open(this.state.live);
-        console.log(req)
+        if (req) {
+            await axios.get(`/api/manager/add?role=${req.role}&quality=${req.quality}`);
+            await this.refresh();
+        }
     }
 
     async editDownloader(role: string) {
         const req = await this.streamModal.current?.open(this.state.live, role);
-        console.log(req)
+        if (req) {
+            await axios.get(`/api/manager/update?role=${req.role}&quality=${req.quality}`);
+            await this.refresh();
+        }
     }
 
     async deleteDownloader(role: string) {
+        const that = this;
         confirm({
-            title: 'Do you want to delete this Downloader?',
+            title: 'Warning',
+            content: 'Do you want to delete this Downloader?',
             icon: <ExclamationCircleFilled />,
-            onOk() {
-                console.log('delete', role);
+            async onOk() {
+                await axios.get(`/api/manager/delete?role=${role}`);
+                await that.refresh();
             },
         });
     }
@@ -122,6 +133,7 @@ class Index extends Component {
             content: (
                 <div>
                     <p>Error Count: {downloader.error_count}</p>
+                    <p>Quality: {downloader.quality}</p>
                 </div>
             )
         }))
@@ -135,7 +147,7 @@ class Index extends Component {
                         ghost: true,
                     }}
                     showActions="hover"
-                    grid={{ gutter: 16, column: 2 }}
+                    grid={{ gutter: 16, column: 3 }}
                     metas={{
                         title: {},
                         subTitle: {},
@@ -163,12 +175,16 @@ class Index extends Component {
                         {
                             this.state.live.live ?
                                 <div>
-                                    <Space size="middle">
-                                        <h2>Living</h2>
-                                        <h3>{
-                                            `${this.state.round.red} vs ${this.state.round.blue} Round ${this.state.round.round}`
-                                        }</h3>
-                                    </Space>
+                                    {
+                                        this.state.round.status === "IDLE" ?
+                                            <h2>Waiting Match</h2> :
+                                            <Space size="middle">
+                                                <h2>Living</h2>
+                                                <h3>{
+                                                    `${this.state.round.red} vs ${this.state.round.blue} Round ${this.state.round.round}`
+                                                }</h3>
+                                            </Space>
+                                    }
                                 </div> : <h2>Idle</h2>
                         }
                     </div>
