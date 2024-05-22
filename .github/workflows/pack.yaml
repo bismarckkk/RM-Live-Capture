@@ -1,0 +1,73 @@
+name: Package CI
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      RELEASE_UPLOAD_ID: ${{ steps.create_release.outputs.id }}
+      RELEASE_UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ncipollo/release-action@v1
+        id: create_release
+        with:
+          generateReleaseNotes: true
+          makeLatest: true
+          token: ${{ secrets.API_TOKEN }}
+
+  build-nightly:
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: get yarn cache directory path
+        id: yarn-cache-dir-path
+        shell: bash
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+
+      - name: setup yarn cache
+        uses: actions/cache/restore@v3
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: setup yarn dependencies
+        working-directory: ./web
+        run: yarn
+
+      - name: build
+        working-directory: ./web
+        run: yarn build
+
+      - name: pack
+        run: |
+          mv web/dist/* backend/static
+          tar -czvf RM_Live_Capture.tar.gz backend
+
+      - name: upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.RELEASE_UPLOAD_URL }}
+          asset_path: ./RM_Live_Capture.tar.gz
+          asset_name: RM_Live_Capture.tar.gz
+          asset_content_type: application/gzip

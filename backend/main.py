@@ -16,6 +16,7 @@ from video import filter_video_list, VideoFilterProps, get_video_info, convert_t
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await manager.init()
     yield
     await manager.close()
 
@@ -131,6 +132,4 @@ async def download_video(request: Request, file_name: str = Path()):
 
 if __name__ == '__main__':
     import uvicorn
-    asyncio.run(manager.init())
     uvicorn.run(app, host="0.0.0.0", port=config.port)
-

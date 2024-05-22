@@ -61,12 +61,13 @@ class Downloader:
         self.rid = info.round
         self.segments = []
         self.title = f"{info.red} Vs {info.blue} {self.name} R{info.round}"
-        self.job = self.scheduler.add_job(self._get_m3u8_info, "interval", seconds=3, max_instances=2)
+        self.job = self.scheduler.add_job(self._get_m3u8_info, "interval", seconds=3)
         self.logger.info(f"Start {self.name} {self.title}")
+        self.logger.info(f"URL: {self.url}")
 
     async def split(self):
         await self.end()
-        self.job = self.scheduler.add_job(self._get_m3u8_info, "interval", seconds=3, max_instances=2)
+        self.job = self.scheduler.add_job(self._get_m3u8_info, "interval", seconds=3)
         self.logger.info(f"Split {self.name} {self.title}")
 
     async def end(self):
@@ -104,6 +105,7 @@ class Downloader:
             self.error_count += 1
             self.logger.error(f"M3U8 processing timeout")
             return
+        self.logger.debug(f"Getting m3u8 info")
         try:
             self.processing = True
             async with self.session.get(self.url) as response:
