@@ -62,6 +62,7 @@ const columns: ProColumns<VideoItem>[] = [
         title: 'Action',
         valueType: 'option',
         key: 'option',
+        fixed: 'right',
         width: 300,
         render: (_, record, __, action) => <Space size="middle">
             <ConvertButton filename={record.file_name}/>
@@ -119,6 +120,7 @@ export default () => {
                 defaultPageSize: 15,
                 pageSizeOptions: [10, 15, 20, 100]
             }}
+            scroll={{ x: 1200 }}
             rowSelection={{}}
             tableAlertRender={({
                 selectedRowKeys,
