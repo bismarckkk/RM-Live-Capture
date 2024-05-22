@@ -84,7 +84,7 @@ class Index extends Component {
 
     async componentDidMount() {
         await this.refresh();
-        this.timer = setInterval(this.refresh.bind(this), 10000);
+        this.timer = setInterval(this.refresh.bind(this), 3000);
     }
 
     async addDownloader() {
@@ -191,7 +191,10 @@ class Index extends Component {
                     <div>
                         <Space.Compact block>
                             <Button icon={<PlusOutlined/>} onClick={this.addDownloader.bind(this)}/>
-                            <Button icon={<ReloadOutlined/>} onClick={this.refresh.bind(this)}/>
+                            <Button icon={<ReloadOutlined/>} onClick={async () => {
+                                this.setState({loading: true});
+                                await this.refresh()
+                            }}/>
                         </Space.Compact>
                     </div>
                 </Flex>
