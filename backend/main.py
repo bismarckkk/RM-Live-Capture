@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, RedirectResponse
 
 import config
+from logger import setUvicornLogger
 from range_response import RangeResponse
 from manager import Manager, get_live_info, LiveStreamReq
 from video import filter_video_list, VideoFilterProps, get_video_info, convert_to_mp4, delete_file
@@ -17,6 +18,7 @@ from video import filter_video_list, VideoFilterProps, get_video_info, convert_t
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await manager.init()
+    setUvicornLogger("INFO")
     yield
     await manager.close()
 

@@ -124,6 +124,12 @@ class Manager:
         await self.scan()
 
     async def scan(self):
+        try:
+            await self._scan()
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+
+    async def _scan(self):
         self.logger.info("Scanning...")
         live_info = await get_live_info()
         for req in self.reqs:

@@ -25,6 +25,7 @@ export const getQuery = (search: string) => {
 }
 
 export function sec2str(sec: number) {
+    sec = Math.round(sec)
     const minutes = Math.floor(sec / 60);
     let seconds = (sec % 60).toString();
     if (seconds.length === 1) {

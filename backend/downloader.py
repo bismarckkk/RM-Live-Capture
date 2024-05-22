@@ -98,7 +98,7 @@ class Downloader:
                 f.write(f"#EXTINF:{segment.duration},\n")
                 f.write(f"{self._get_segment_name(segment)}\n")
             f.write("#EXT-X-ENDLIST\n")
-        self.logger.info(f"Save {self.name} {self.title}")
+        self.logger.debug(f"Save {self.name} {self.title}")
 
     async def _get_m3u8_info(self):
         if self.processing:
@@ -120,6 +120,7 @@ class Downloader:
                         segments.append(Segment(duration=duration, uri=lines[i + 1]))
                 self.job.reschedule("interval", seconds=duration)
                 await self._download_segments(segments)
+                await self._save()
             if len(segments) > 750:
                 await self.split()
             self.processing = False
