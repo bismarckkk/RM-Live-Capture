@@ -23,3 +23,12 @@ export const getQuery = (search: string) => {
     }
     return result
 }
+
+export function sec2str(sec: number) {
+    const minutes = Math.floor(sec / 60);
+    let seconds = (sec % 60).toString();
+    if (seconds.length === 1) {
+        seconds = '0' + seconds;
+    }
+    return `${minutes}:${seconds}`;
+}

@@ -27,6 +27,7 @@ class DownloaderInfo(BaseModel):
     status: bool
     error_count: int
     quality: str = "None"
+    recorded: float = 0
 
 
 class ManagerInfo(BaseModel):
@@ -37,16 +38,20 @@ class ManagerInfo(BaseModel):
 async def get_round_info() -> RoundInfo:
     async with aiohttp.ClientSession(headers=config.oss_headers) as session:
         async with session.get(config.round_info_url) as response:
-            data = (await response.json())[0]['currentMatch']
-            if data is None:
-                return RoundInfo(red="Null", blue="Null", round=0, id=0, status="IDLE")
-            info = RoundInfo(**{
-                "red": data['redSide']['player']['team']['collegeName'],
-                "blue": data['blueSide']['player']['team']['collegeName'],
-                "round": data['round'],
-                "id": data['id'],
-                "status": data['status']
-            })
+            _data = await response.json()
+            info = RoundInfo(red="Null", blue="Null", round=0, id=0, status="IDLE")
+            for data in _data:
+                data = data['currentMatch']
+                if data is None:
+                    continue
+                info = RoundInfo(**{
+                    "red": data['redSide']['player']['team']['collegeName'],
+                    "blue": data['blueSide']['player']['team']['collegeName'],
+                    "round": data['round'],
+                    "id": data['id'],
+                    "status": data['status']
+                })
+                break
             return info
 
 
@@ -99,7 +104,6 @@ class Manager:
                     reqs = [LiveStreamReq(**it) for it in json.load(f)]
         self.downloaders: Dict[str, Union[Downloader, None]] = {}
         self.scheduler = AsyncIOScheduler()
-        self.scheduler.start()
         self.reqs = reqs
         self.round: Union[RoundInfo, None] = None
         self.status = "IDLE"
@@ -107,6 +111,7 @@ class Manager:
         self.logger = getLogger("Manager", "INFO")
 
     async def init(self):
+        self.scheduler.start()
         live_info = await get_live_info()
         for req in self.reqs:
             stream = live_info.streams.get(req.role, {}).get(req.quality)
@@ -119,6 +124,7 @@ class Manager:
         await self.scan()
 
     async def scan(self):
+        self.logger.info("Scanning...")
         live_info = await get_live_info()
         for req in self.reqs:
             stream = live_info.streams.get(req.role, {}).get(req.quality)
@@ -183,8 +189,9 @@ class Manager:
                     name=role,
                     status=(self.round.status == 'STARTED'),
                     error_count=downloader.error_count,
-                    quality=self.get_req(role).quality)
-                )
+                    quality=self.get_req(role).quality,
+                    recorded=round(sum([it.duration for it in downloader.segments]))
+                ))
         return ManagerInfo(round_info=self.round, downloaders=downloaders)
 
     def _save_reqs(self):

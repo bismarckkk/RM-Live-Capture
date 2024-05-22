@@ -6,6 +6,7 @@ import Loading from "@/loading";
 import StreamModal from "@/components/streamModal";
 
 import axios from "axios";
+import {sec2str} from "@/utils";
 
 const { confirm } = Modal;
 
@@ -14,6 +15,7 @@ interface Downloader {
     status: boolean;
     error_count: number;
     quality: string;
+    recorded: number;
 }
 
 interface RoundInfo {
@@ -132,6 +134,7 @@ class Index extends Component {
             ],
             content: (
                 <div>
+                    <p>Recorded: {sec2str(downloader.recorded)}</p>
                     <p>Error Count: {downloader.error_count}</p>
                     <p>Quality: {downloader.quality}</p>
                 </div>

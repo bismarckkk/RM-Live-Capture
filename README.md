@@ -12,7 +12,7 @@
 * 通过拉取赛事流程JSON实现自动切片与自动启动和停止
 
 ### 自行部署
-1. 安装必要依赖：NodeJs、Yarn、Python、Ffmpeg
+1. 安装必要依赖：NodeJs、Yarn、Python、Ffmpeg（不需要转码功能可以不安装ffmpeg）
 2. Clone项目到本地并进入项目文件夹
 3. 进入web目录，执行`yarn && yarn build`构建前端项目
 4. 将`web/dist`目录中的所有文件拷贝到`backend/static`目录

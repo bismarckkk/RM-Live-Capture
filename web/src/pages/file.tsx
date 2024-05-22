@@ -8,7 +8,7 @@ import OptionsAction from "@/components/optionsAction";
 import { Link } from "umi";
 
 import axios from "axios";
-import { VideoItem, ApiResult } from "@/utils";
+import {VideoItem, ApiResult, sec2str} from "@/utils";
 
 
 const roles = [
@@ -56,14 +56,7 @@ const columns: ProColumns<VideoItem>[] = [
         dataIndex: 'duration',
         search: false,
         sorter: true,
-        renderText: (text) => {
-            const minutes = Math.floor(text / 60);
-            let seconds = (text % 60).toString();
-            if (seconds.length === 1) {
-                seconds = '0' + seconds;
-            }
-            return `${minutes}:${seconds}`;
-        }
+        renderText: sec2str
     },
     {
         title: 'Action',
