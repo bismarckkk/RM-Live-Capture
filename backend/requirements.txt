@@ -4,3 +4,4 @@ pydantic
 fastapi
 uvicorn
 colorlog
+cachetools
