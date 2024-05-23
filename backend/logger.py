@@ -16,7 +16,7 @@ def getLogger(name, log_level):
 
     ch = logging.StreamHandler()
     formatter = colorlog.ColoredFormatter(
-        "%(log_color)s%(levelname)-5s%(reset)s %(white)s%(name)-16s%(reset)s %(blue)s%(message)s%(reset)s",
+        "%(log_color)s%(levelname)-5s%(reset)s %(white)s%(name)-8s%(reset)s %(blue)s%(message)s%(reset)s",
         datefmt=None,
         reset=True,
         log_colors={
@@ -42,7 +42,7 @@ def setUvicornLogger(log_level):
 
     ch = logging.StreamHandler()
     formatter = colorlog.ColoredFormatter(
-        "%(log_color)s%(levelname)-5s%(reset)s %(white)suvicorn%(reset)s          "
+        "%(log_color)s%(levelname)-5s%(reset)s %(white)suvicorn%(reset)s "
         "%(blue)s%(message)s%(reset)s",
         datefmt=None,
         reset=True,

@@ -14,6 +14,21 @@ from logger import getLogger
 
 
 name_regex = re.compile(r"/(\d+_\d+)\.ts")
+role2code = {
+    '主视角': 'Main',
+    '红方英雄': 'R1',
+    '蓝方英雄': 'B1',
+    '红方工程': 'R2',
+    '蓝方工程': 'B2',
+    '红方3号步兵': 'R3',
+    '蓝方3号步兵': 'B3',
+    '红方4号步兵': 'R4',
+    '蓝方4号步兵': 'B4',
+    '红方5号步兵': 'R5',
+    '蓝方5号步兵': 'B5',
+    '红方空中': 'R7',
+    '蓝方空中': 'B7',
+}
 
 
 class Segment(BaseModel):
@@ -53,7 +68,7 @@ class Downloader:
 
         self.segments: List[Segment] = []
         self.job: Union[Job, None] = None
-        self.logger = getLogger(f"DL-{self.name}", "INFO")
+        self.logger = getLogger(f"DL-{role2code.get(self.name, self.name)}", "INFO")
         
     async def start(self, info: RoundInfo):
         if self.job is not None:
