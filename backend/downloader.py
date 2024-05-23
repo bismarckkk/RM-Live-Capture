@@ -121,12 +121,12 @@ class Downloader:
                     if line.startswith("#EXTINF"):
                         duration = float(line.split(":")[1].split(",")[0])
                         segments.append(Segment(duration=duration, uri=lines[i + 1]))
-                self.job.reschedule("interval", seconds=duration)
+                if self.job is not None:
+                    self.job.reschedule("interval", seconds=duration)
                 await self._download_segments(segments)
                 await self._save()
             if len(segments) > 750:
                 await self.split()
-            self.processing = False
         except aiohttp.ClientResponseError as e:
             self.logger.error(f"Error {e.status} on {self.name}")
             if e.status == 404:
@@ -139,6 +139,8 @@ class Downloader:
                     await self.split()
         except Exception as e:
             self.logger.error(f"Error {e} on {self.name}")
+        finally:
+            self.processing = False
             
     def _get_segment_name(self, segment: Segment):
         id_ = name_regex.findall(segment.uri)[0].replace("_", "-")
