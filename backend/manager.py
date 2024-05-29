@@ -38,7 +38,7 @@ class ManagerInfo(BaseModel):
 
 
 async def get_round_info() -> RoundInfo:
-    async with aiohttp.ClientSession(headers=config.oss_headers) as session:
+    async with aiohttp.ClientSession(headers=config.oss_headers, timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.get(config.round_info_url) as response:
             _data = await response.json()
             info = RoundInfo(red="Null", blue="Null", round=0, id=0, status="IDLE")
@@ -66,7 +66,7 @@ def live_string_to_dict(live_string: List) -> Dict[str, str]:
 
 @cached(TTLCache(1, 5))
 async def get_live_info() -> LiveInfo:
-    async with aiohttp.ClientSession(headers=config.oss_headers) as session:
+    async with aiohttp.ClientSession(headers=config.oss_headers, timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.get(config.live_info_url) as response:
             data = json.loads(await response.text())['eventData']
             info = {

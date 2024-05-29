@@ -63,7 +63,8 @@ class Downloader:
         self.start_time = time.time()
         self.session = aiohttp.ClientSession(
             connector=self.connector,
-            headers=config.headers
+            headers=config.headers,
+            timeout=aiohttp.ClientTimeout(total=10)
         )
 
         self.segments: List[Segment] = []
@@ -141,6 +142,7 @@ class Downloader:
                 await self._download_segments(segments)
                 await self._save()
             if len(segments) > 750:
+                self.processing = False
                 await self.split()
         except aiohttp.ClientResponseError as e:
             self.logger.error(f"Error {e.status} on {self.name}")
