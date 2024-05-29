@@ -112,6 +112,8 @@ async def delete_video(file_name: str = Path()):
 
 @app.get("/api/video/file/{file_name}")
 async def get_video_file(request: Request, file_name: str = Path()):
+    if file_name.split('.')[-1] == 'mp4' and file_name in [it.name for it in config.mp4_dir.glob("*.mp4")]:
+        return RangeResponse(request, str(config.mp4_dir / file_name), "video/mp4")
     if not (path_regex.match(file_name) or path_f_regex.match(file_name)):
         return JSONResponse({"code": -1, "msg": "Illegal file name"}, 400)
     if not (config.save_dir / file_name).exists():
