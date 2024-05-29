@@ -113,9 +113,14 @@ class Downloader:
             f.write("#EXT-X-TARGETDURATION:4\n")
             f.write("#EXT-X-PLAYLIST-TYPE:VOD\n")
             f.write(f"#TITLE:{self.title} {int(time.time())}\n")
+            last_id = -1
             for segment in self.segments:
+                id_ = int(name_regex.findall(segment.uri)[0].split("_")[-1])
+                if id_ != last_id + 1 and last_id != -1:
+                    f.write("#EXT-X-DISCONTINUITY\n")
                 f.write(f"#EXTINF:{segment.duration},\n")
                 f.write(f"{self._get_segment_name(segment)}\n")
+                last_id = id_
             f.write("#EXT-X-ENDLIST\n")
         self.logger.debug(f"Save {self.name} {self.title}")
 
