@@ -1,7 +1,7 @@
 import React, { Component, createRef } from 'react';
 import { ProList } from "@ant-design/pro-components";
 import { Button, Tag, Result, Flex, Space, Modal } from "antd";
-import { PlusOutlined, ReloadOutlined, ExclamationCircleFilled } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, ExclamationCircleFilled, CaretRightOutlined, PauseOutlined } from "@ant-design/icons";
 import Loading from "@/loading";
 import StreamModal from "@/components/streamModal";
 
@@ -28,6 +28,7 @@ interface RoundInfo {
 
 interface ManagerInfo {
     round_info: RoundInfo;
+    manual_mode: boolean
     downloaders: Downloader[];
 }
 
@@ -48,6 +49,7 @@ class Index extends Component {
         live: LiveInfo,
         loading: boolean,
         error: null | string,
+        manual: boolean
     } = {
         downloaders: [],
         round: {
@@ -63,6 +65,7 @@ class Index extends Component {
         },
         loading: true,
         error: null,
+        manual: false
     }
 
     streamModal = createRef<StreamModal>();
@@ -76,7 +79,8 @@ class Index extends Component {
                 downloaders: managerInfo.data.downloaders,
                 round: managerInfo.data.round_info,
                 live: liveInfo.data,
-                loading: false
+                loading: false,
+                manual: managerInfo.data.manual_mode
             });
         } catch (e: any) {
             console.error(e);
@@ -185,23 +189,39 @@ class Index extends Component {
                 <Flex justify="space-between" align="center" style={{width: "100%"}}>
                     <div>
                         {
-                            this.state.live.live ?
+                            this.state.manual ?
                                 <div>
-                                    {
-                                        this.state.round.status === "IDLE" ?
-                                            <h2>Waiting Match</h2> :
-                                            <Space size="middle">
-                                                <h2>Living</h2>
-                                                <h3>{
-                                                    `${this.state.round.red} vs ${this.state.round.blue} Round ${this.state.round.round}`
-                                                }</h3>
-                                            </Space>
-                                    }
-                                </div> : <h2>Idle</h2>
+                                    <h2 style={{color: 'red'}}>Manual Mode</h2>
+                                    <div>Automatic slicing has been turned off</div>
+                                </div> :
+                                this.state.live.live ?
+                                    <div>
+                                        {
+                                            this.state.round.status === "IDLE" ?
+                                                <h2>Waiting Match</h2> :
+                                                <Space size="middle">
+                                                    <h2>Living</h2>
+                                                    <h3>{
+                                                        `${this.state.round.red} vs ${this.state.round.blue} Round ${this.state.round.round}`
+                                                    }</h3>
+                                                </Space>
+                                        }
+                                    </div> : <h2>Idle</h2>
                         }
                     </div>
                     <div>
                         <Space.Compact block>
+                            {
+                                this.state.manual ?
+                                    <Button icon={<PauseOutlined/>} onClick={async () => {
+                                        await axios.get("/api/manager/end");
+                                        await this.refresh();
+                                    }}/> :
+                                    <Button icon={<CaretRightOutlined/>} onClick={async () => {
+                                        await axios.get("/api/manager/start");
+                                        await this.refresh();
+                                    }}/>
+                            }
                             <Button icon={<PlusOutlined/>} onClick={this.addDownloader.bind(this)}/>
                             <Button icon={<ReloadOutlined/>} onClick={async () => {
                                 this.setState({loading: true});
