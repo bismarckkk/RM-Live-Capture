@@ -34,6 +34,7 @@ class DownloaderInfo(BaseModel):
 
 class ManagerInfo(BaseModel):
     round_info: RoundInfo
+    manual_mode: bool
     downloaders: List[DownloaderInfo]
 
 
@@ -87,7 +88,7 @@ async def get_live_info() -> LiveInfo:
                     if stream:
                         info['streams'][fpv['role']] = stream
             if not ok:
-                live_info = data[0]
+                live_info = data[4]
                 mainStream = live_string_to_dict(live_info['zoneLiveString'])
                 if mainStream:
                     info['streams']['主视角'] = mainStream
@@ -112,6 +113,7 @@ class Manager:
         self.status = "IDLE"
         self.job: Union[Job, None] = None
         self.logger = getLogger("Manager", "INFO")
+        self.manual_mode = False
 
     async def init(self):
         self.scheduler.start()
@@ -128,9 +130,24 @@ class Manager:
 
     async def scan(self):
         try:
-            await self._scan()
+            if not self.manual_mode:
+                await self._scan()
         except Exception as e:
             self.logger.error(f"Error: {e}")
+
+    async def manual_start(self):
+        _round = RoundInfo(red="红方", blue="蓝方", round=1, id=99999, status="STARTED")
+        self.manual_mode = True
+        for downloader in self.downloaders.values():
+            if downloader is not None and downloader.cid == -1:
+                await downloader.start(_round)
+
+    async def manual_end(self):
+        for key, downloader in self.downloaders.items():
+            if downloader is not None:
+                await downloader.end()
+                self.downloaders[key] = None
+        self.manual_mode = False
 
     async def _scan(self):
         self.logger.info("Scanning...")
@@ -196,12 +213,12 @@ class Manager:
             else:
                 downloaders.append(DownloaderInfo(
                     name=role,
-                    status=(self.round.status == 'STARTED' and len(downloader.segments) > 0),
+                    status=(self.manual_mode or (self.round.status == 'STARTED' and len(downloader.segments) > 0)),
                     error_count=downloader.error_count,
                     quality=self.get_req(role).quality,
                     recorded=round(sum([it.duration for it in downloader.segments]))
                 ))
-        return ManagerInfo(round_info=self.round, downloaders=downloaders)
+        return ManagerInfo(round_info=self.round, manual_mode=self.manual_mode, downloaders=downloaders)
 
     def _save_reqs(self):
         reqs = [it.dict() for it in self.reqs]

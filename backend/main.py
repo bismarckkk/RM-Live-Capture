@@ -114,6 +114,18 @@ async def update_manager(role: str, quality: str):
     return manager.get()
 
 
+@app.get("/api/manager/start")
+async def manual_start():
+    await manager.manual_start()
+    return manager.get()
+
+
+@app.get("/api/manager/end")
+async def manual_end():
+    await manager.manual_end()
+    return manager.get()
+
+
 @app.post("/api/video/list")
 async def get_video(props: VideoFilterProps):
     return filter_video_list(**props.dict())
