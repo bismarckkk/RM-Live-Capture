@@ -11,11 +11,11 @@ export default defineConfig({
     title: 'RM Live Capture',
     proxy: {
         '/api': {
-            'target': 'http://127.0.0.1:10398/',
+            'target': 'http://192.168.1.4:10398/',
             'changeOrigin': true,
             onProxyReq: (proxyReq, req, res) => {
-                const username = 'nuaanuaa';
-                const password = 'ckyfckyf';
+                const username = 'admin';
+                const password = 'admin1';
                 const token = Buffer.from(`${username}:${password}`, 'utf8').toString('base64');
                 proxyReq.setHeader('Authorization', `Basic ${token}`);
             }
