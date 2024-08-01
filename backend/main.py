@@ -1,17 +1,20 @@
 import re
 import secrets
 import base64
+from typing import List
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Path, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, RedirectResponse
+from bilibili_api.login_func import QrCodeLoginEvents
 
 import config
 from logger import setUvicornLogger
 from range_response import RangeResponse
 from manager import Manager, get_live_info, LiveStreamReq
 from video import filter_video_list, VideoFilterProps, get_video_info, convert_to_mp4, delete_file
+from bilibili_helper import login, check_qrcode_events, get_username, upload_video
 
 
 @asynccontextmanager
@@ -43,7 +46,10 @@ def check_permission(info):
     return is_user or is_admin, is_admin
 
 
-admin_path = ['/api/video/delete', '/api/video/convert', '/api/video/upload']
+admin_path = [
+    '/api/video/delete', '/api/video/convert', '/api/video/upload', '/api/bili/login', '/api/bili/check',
+    '/api/bili/username', '/api/bili/upload'
+]
 
 
 @app.middleware("http")
@@ -146,6 +152,33 @@ async def download_video(request: Request, file_name: str = Path()):
     if not mp4.exists():
         return JSONResponse({"code": 1, "msg": "MP4 file not created"}, 404)
     return RangeResponse(request, str(mp4), "video/mp4")
+
+
+@app.get("/api/bili/login")
+async def login_bili():
+    qr64, key = login()
+    return {"code": 0, "qr": qr64, "key": key}
+
+
+@app.get("/api/bili/check")
+async def check_bili(key: str):
+    status = check_qrcode_events(key)
+    if status == QrCodeLoginEvents.DONE:
+        return {"code": 0}
+    elif status == QrCodeLoginEvents.TIMEOUT:
+        return {"code": 1, "msg": "QrCode Timeout"}
+    else:
+        return {"code": 0, "status": status}
+
+
+@app.get("/api/bili/username")
+async def get_bili_username():
+    return {"code": 0, "username": await get_username()}
+
+
+@app.post("/api/bili/upload")
+async def upload_bili(title: str, videos: List[str]):
+    print(title, videos)
 
 
 if __name__ == '__main__':

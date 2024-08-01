@@ -6,3 +6,5 @@ uvicorn
 colorlog
 cachetools
 asyncache
+# bilibili-api的pypi发布CI/CD故障，必须从git拉取
+git+https://github.com/Nemo2011/bilibili-api.git
