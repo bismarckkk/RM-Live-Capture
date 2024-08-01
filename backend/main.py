@@ -1,7 +1,6 @@
 import re
 import secrets
 import base64
-import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Path, Request
@@ -35,9 +34,16 @@ app.mount("/static", staticFiles, name="static")
 def check_permission(info):
     info = info.replace("Basic ", "")
     current_username_bytes, current_password_bytes = base64.b64decode(info).decode().split(':', 1)
+    is_admin_correct_username = secrets.compare_digest(current_username_bytes.encode(), config.admin_username)
+    is_admin_correct_password = secrets.compare_digest(current_password_bytes.encode(), config.admin_password)
     is_correct_username = secrets.compare_digest(current_username_bytes.encode(), config.username)
     is_correct_password = secrets.compare_digest(current_password_bytes.encode(), config.password)
-    return is_correct_username and is_correct_password
+    is_user = is_correct_username and is_correct_password
+    is_admin = is_admin_correct_username and is_admin_correct_password
+    return is_user or is_admin, is_admin
+
+
+admin_path = ['/api/video/delete', '/api/video/convert', '/api/video/upload']
 
 
 @app.middleware("http")
@@ -45,8 +51,16 @@ async def check_auth(request: Request, call_next):
     if config.basic_security:
         if "Authorization" not in request.headers:
             return JSONResponse(None, 401, {"WWW-Authenticate": "Basic"})
-        if not check_permission(request.headers["Authorization"]):
+        is_user, is_admin = check_permission(request.headers["Authorization"])
+        if not is_user:
             return JSONResponse(None, 401, {"WWW-Authenticate": "Basic"})
+        need_admin = False
+        for path in admin_path:
+            if request.url.path.startswith(path):
+                need_admin = True
+                break
+        if need_admin and not is_admin:
+            return JSONResponse({"msg": "Need Admin Permission"}, 401, {"WWW-Authenticate": "Basic"})
     return await call_next(request)
 
 

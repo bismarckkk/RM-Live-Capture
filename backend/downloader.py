@@ -108,7 +108,7 @@ class Downloader:
     async def _save(self):
         if not self.segments:
             return
-        with open(config.save_dir / f"{self.id}_{self.cid}_{self.rid}_{int(self.start_time)}.m3u8", "w") as f:
+        with open(config.save_dir / f"{self.id}_{self.cid}_{self.rid}_{int(self.start_time)}.m3u8", "w", encoding="utf-8") as f:
             f.write("#EXTM3U\n")
             f.write("#EXT-X-TARGETDURATION:4\n")
             f.write("#EXT-X-PLAYLIST-TYPE:VOD\n")
