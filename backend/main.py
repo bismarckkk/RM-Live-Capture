@@ -14,7 +14,7 @@ from logger import setUvicornLogger
 from range_response import RangeResponse
 from manager import Manager, get_live_info, LiveStreamReq
 from video import filter_video_list, VideoFilterProps, get_video_info, convert_to_mp4, delete_file
-from bilibili_helper import login, check_qrcode_events, get_username, upload_video
+from bilibili_helper import login, check, get_username, upload_video
 
 
 @asynccontextmanager
@@ -54,12 +54,23 @@ admin_path = [
 
 @app.middleware("http")
 async def check_auth(request: Request, call_next):
-    if config.basic_security:
+    if config.basic_security == "on":
         if "Authorization" not in request.headers:
             return JSONResponse(None, 401, {"WWW-Authenticate": "Basic"})
         is_user, is_admin = check_permission(request.headers["Authorization"])
         if not is_user:
             return JSONResponse(None, 401, {"WWW-Authenticate": "Basic"})
+        need_admin = False
+        for path in admin_path:
+            if request.url.path.startswith(path):
+                need_admin = True
+                break
+        if need_admin and not is_admin:
+            return JSONResponse({"msg": "Need Admin Permission"}, 401, {"WWW-Authenticate": "Basic"})
+    elif config.basic_security == "admin":
+        if "Authorization" not in request.headers:
+            return JSONResponse(None, 401, {"WWW-Authenticate": "Basic"})
+        is_user, is_admin = check_permission(request.headers["Authorization"])
         need_admin = False
         for path in admin_path:
             if request.url.path.startswith(path):
@@ -156,15 +167,15 @@ async def download_video(request: Request, file_name: str = Path()):
 
 @app.get("/api/bili/login")
 async def login_bili():
-    qr64, key = login()
+    qr64, key = await login()
     return {"code": 0, "qr": qr64, "key": key}
 
 
 @app.get("/api/bili/check")
 async def check_bili(key: str):
-    status = check_qrcode_events(key)
+    status = check(key)
     if status == QrCodeLoginEvents.DONE:
-        return {"code": 0}
+        return {"code": 1000}
     elif status == QrCodeLoginEvents.TIMEOUT:
         return {"code": 1, "msg": "QrCode Timeout"}
     else:
@@ -173,12 +184,13 @@ async def check_bili(key: str):
 
 @app.get("/api/bili/username")
 async def get_bili_username():
-    return {"code": 0, "username": await get_username()}
+    return {"code": 0, "msg": await get_username()}
 
 
 @app.post("/api/bili/upload")
 async def upload_bili(title: str, videos: List[str]):
-    print(title, videos)
+    upload_video(title, [get_video_info(video).title for video in videos])
+    return JSONResponse({"code": 0}, 200)
 
 
 if __name__ == '__main__':

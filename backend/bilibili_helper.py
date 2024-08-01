@@ -9,12 +9,13 @@ from pydantic import BaseModel
 
 import config
 from logger import getLogger
+import asyncio
 
 logger = getLogger(f"Uploader", "INFO")
 
 
 class CookieInfo(BaseModel):
-    sessdata: Union[str, None] = None
+    SESSDATA: Union[str, None] = None
     dedUserIf: Union[str, None] = None
     bili_jct: Union[str, None] = None
     buvid3: Union[str, None] = None
@@ -40,7 +41,7 @@ async def login():
     return qr64, key
 
 
-def check_qrcode_events(key: str):
+def check(key: str):
     status, cred = check_qrcode_events(key)
     if status == QrCodeLoginEvents.DONE:
         cookie = CookieInfo(**cred.get_cookies())
@@ -55,10 +56,10 @@ async def get_username():
         return '请先登录'
     cred = cookie.to_credential()
     info = await get_self_info(cred)
-    return info['data']['name']
+    return info['name']
 
 
-async def upload_video(title: str, videos: List[str]):
+def upload_video(title: str, videos: List[str]):
     cookie = load_cookie()
     cred = cookie.to_credential()
     vu_meta = video_uploader.VideoMeta(
@@ -77,4 +78,4 @@ async def upload_video(title: str, videos: List[str]):
     async def ev(data):
         logger.info(f"Event: {data}")
 
-    await uploader.start()
+    asyncio.create_task(uploader.start())

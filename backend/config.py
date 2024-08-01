@@ -43,3 +43,6 @@ reqs_json = Path("reqs.json")
 basic_security = True
 username = b"nuaanuaa"
 password = b"ckyfckyf"
+
+admin_username = b"admin"
+admin_password = b"admin1"

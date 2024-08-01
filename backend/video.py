@@ -29,7 +29,7 @@ class VideoFilterProps(BaseModel):
 def get_video_info(file_name: str) -> Union[Video, None]:
     title = "Null Vs Null"
     duration = 0.
-    with (config.save_dir / file_name).open('r', encoding="utf-8") as f:
+    with (config.save_dir / file_name).open('r') as f:
         for line in f.readlines():
             if line.startswith("#TITLE:"):
                 title = line.replace("#TITLE:", "").strip()
