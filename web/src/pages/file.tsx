@@ -22,7 +22,30 @@ const columns: ProColumns<VideoItem>[] = [
         dataIndex: 'title',
         ellipsis: true,
         search: false,
-        width: 450
+        width: 450,
+        renderText: text => {
+            const lastSpaceIndex = text.lastIndexOf(' ');
+            if (lastSpaceIndex === -1) {
+                throw new Error('No space found in the text');
+            }
+
+            const title = text.substring(0, lastSpaceIndex);
+            const timestampStr = text.substring(lastSpaceIndex + 1);
+            const timestamp = parseInt(timestampStr, 10) * 1000;
+
+            if (isNaN(timestamp)) {
+                throw new Error('Invalid timestamp');
+            }
+
+            const date = new Date(timestamp);
+
+            const dateString = new Intl.DateTimeFormat(
+                'zh-CN',
+                { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }
+            ).format(date).replace(/\//g, '-').replace(',', '');
+
+            return `${title} ${dateString}`;
+        }
     },
     {
         title: 'Red',
