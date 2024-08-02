@@ -1,6 +1,7 @@
 from typing import List, Dict, Union
 import json
 import asyncio
+import traceback
 
 import aiohttp
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -130,9 +131,9 @@ class Manager:
 
     async def scan(self):
         try:
-            if not self.manual_mode:
-                await self._scan()
+            await self._scan()
         except Exception as e:
+            traceback.print_exc()
             self.logger.error(f"Error: {e}")
 
     async def manual_start(self):
@@ -143,10 +144,9 @@ class Manager:
                 await downloader.start(_round)
 
     async def manual_end(self):
-        for key, downloader in self.downloaders.items():
+        for downloader in self.downloaders.values():
             if downloader is not None:
                 await downloader.end()
-                self.downloaders[key] = None
         self.manual_mode = False
 
     async def _scan(self):
@@ -159,38 +159,40 @@ class Manager:
                     self.downloaders[req.role] = Downloader(req.role, stream, self.scheduler)
                 else:
                     self.downloaders[req.role].url = stream
-        if not live_info.live:
-            if self.status == 'STARTED':
-                for downloader in self.downloaders.values():
-                    if downloader is not None:
-                        await downloader.end()
-                self.status = "IDLE"
-                self.round = await get_round_info()
-            self.job.reschedule(trigger="interval", seconds=120)
-        else:
-            if self.status == 'IDLE' and self.round is not None:
-                self.round.status = 'IDLE'
-            self.job.reschedule(trigger="interval", seconds=10)
 
-        round_ = await get_round_info()
-        if self.round is None or round_ != self.round:
-            self.round = round_
-            if self.round.status == 'STARTED':
-                for downloader in self.downloaders.values():
-                    if downloader is not None:
-                        await downloader.start(self.round)
-                        await asyncio.sleep(0.5)
-                self.status = "STARTED"
+        if not self.manual_mode:
+            if not live_info.live:
+                if self.status == 'STARTED':
+                    for downloader in self.downloaders.values():
+                        if downloader is not None:
+                            await downloader.end()
+                    self.status = "IDLE"
+                    self.round = await get_round_info()
+                self.job.reschedule(trigger="interval", seconds=120)
             else:
-                for downloader in self.downloaders.values():
-                    if downloader is not None:
-                        await downloader.end()
-                self.status = "IDLE"
-        else:
-            if self.round.status == 'STARTED':
-                for downloader in self.downloaders.values():
-                    if downloader is not None and downloader.cid == -1:
-                        await downloader.start(self.round)
+                if self.status == 'IDLE' and self.round is not None:
+                    self.round.status = 'IDLE'
+                self.job.reschedule(trigger="interval", seconds=10)
+
+            round_ = await get_round_info()
+            if self.round is None or round_ != self.round:
+                self.round = round_
+                if self.round.status == 'STARTED':
+                    for downloader in self.downloaders.values():
+                        if downloader is not None:
+                            await downloader.start(self.round)
+                            await asyncio.sleep(0.5)
+                    self.status = "STARTED"
+                else:
+                    for downloader in self.downloaders.values():
+                        if downloader is not None:
+                            await downloader.end()
+                    self.status = "IDLE"
+            else:
+                if self.round.status == 'STARTED':
+                    for downloader in self.downloaders.values():
+                        if downloader is not None and downloader.cid == -1:
+                            await downloader.start(self.round)
 
     async def close(self):
         for downloader in self.downloaders.values():
@@ -218,7 +220,10 @@ class Manager:
                     quality=self.get_req(role).quality,
                     recorded=round(sum([it.duration for it in downloader.segments]))
                 ))
-        return ManagerInfo(round_info=self.round, manual_mode=self.manual_mode, downloaders=downloaders)
+        _round = self.round
+        if _round is None:
+            _round = RoundInfo(red="Null", blue="Null", round=0, id=0, status="IDLE")
+        return ManagerInfo(round_info=_round, manual_mode=self.manual_mode, downloaders=downloaders)
 
     def _save_reqs(self):
         reqs = [it.dict() for it in self.reqs]

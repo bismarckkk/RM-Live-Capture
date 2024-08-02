@@ -47,8 +47,8 @@ def check_permission(info):
 
 
 admin_path = [
-    '/api/video/delete', '/api/video/convert', '/api/video/upload', '/api/bili/login', '/api/bili/check',
-    '/api/bili/username', '/api/bili/upload'
+    '/api/video/delete', '/api/video/convert', '/api/video/upload', '/api/bili', '/api/manager/delete',
+    '/api/manager/add', '/api/manager/update', '/api/manager/start', '/api/manager/end'
 ]
 
 
