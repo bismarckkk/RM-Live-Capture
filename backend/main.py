@@ -68,15 +68,17 @@ async def check_auth(request: Request, call_next):
         if need_admin and not is_admin:
             return JSONResponse({"msg": "Need Admin Permission"}, 401, {"WWW-Authenticate": "Basic"})
     elif config.basic_security == "admin":
-        if "Authorization" not in request.headers:
-            return JSONResponse(None, 401, {"WWW-Authenticate": "Basic"})
-        is_user, is_admin = check_permission(request.headers["Authorization"])
         need_admin = False
         for path in admin_path:
             if request.url.path.startswith(path):
                 need_admin = True
                 break
-        if need_admin and not is_admin:
+        if not need_admin:
+            return await call_next(request)
+        if "Authorization" not in request.headers:
+            return JSONResponse(None, 401, {"WWW-Authenticate": "Basic"})
+        is_user, is_admin = check_permission(request.headers["Authorization"])
+        if not is_admin:
             return JSONResponse({"msg": "Need Admin Permission"}, 401, {"WWW-Authenticate": "Basic"})
     return await call_next(request)
 
