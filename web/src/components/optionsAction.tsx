@@ -6,6 +6,31 @@ import { VideoItem, ApiResult } from "@/utils";
 import LoginModal from "@/components/loginModal";
 import FormModal from "@/components/formModal";
 
+
+function copyToClipboard(textToCopy: string) {
+    // navigator clipboard 需要https等安全上下文
+    if (navigator.clipboard && window.isSecureContext) {
+        // navigator clipboard 向剪贴板写文本
+        return navigator.clipboard.writeText(textToCopy);
+    } else {
+        // 创建text area
+        let textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        textArea.style.position = "absolute";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        return new Promise<string>((res: Function, rej: Function) => {
+            // 执行复制命令并移除文本框
+            document.execCommand('copy') ? res() : rej();
+            textArea.remove();
+        });
+    }
+}
+
+
 function OptionsAction({rows, reload}: {rows: VideoItem[], reload: () => void}) {
     const [current, setCurrent] = useState(-1);
     const loginModalRef = useRef<LoginModal>(null);
@@ -49,6 +74,22 @@ function OptionsAction({rows, reload}: {rows: VideoItem[], reload: () => void}) 
                     }}
             >
                 Upload to Bilibili
+            </Button>
+            <Button type="link" style={{padding: 0}} disabled={current > 0}
+                    onClick={async () => {
+                        let res = ""
+                        for (let i = 0; i < rows.length; i++) {
+                            res += rows[i].role + ' ' + window.location.origin + '/api/video/file/' + rows[i].file_name + '\n';
+                        }
+                        try {
+                            await copyToClipboard(res);
+                            message.success('Text copied to clipboard');
+                        } catch (err) {
+                            message.error('Failed to copy text! ' + err);
+                        }
+                    }}
+            >
+                Export Play List
             </Button>
             <Button type="link" style={{padding: 0}} disabled={current > 0}
                 onClick={async () => {
