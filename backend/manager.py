@@ -2,6 +2,7 @@ from typing import List, Dict, Union
 import json
 import asyncio
 import traceback
+from datetime import datetime
 
 import aiohttp
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -66,8 +67,33 @@ def live_string_to_dict(live_string: List) -> Dict[str, str]:
     return res
 
 
+def convert_live_info(live_info: dict, info: dict):
+    mainStream = live_string_to_dict(live_info['zoneLiveString'])
+    if mainStream:
+        info['streams']['主视角'] = mainStream
+    for fpv in live_info['fpvData']:
+        stream = live_string_to_dict(fpv['sources'])
+        if stream:
+            info['streams'][fpv['role']] = stream
+
+
+def check_date_position(dates: List[str]) -> int:
+    date_objects = [datetime.strptime(date, "%Y-%m-%d").date() for date in dates]
+    today = datetime.today().date()
+
+    if today > min(date_objects):
+        return -1
+    elif today < max(date_objects):
+        nearest_date = max(date_objects)
+        days_diff = (nearest_date - today).days
+        return days_diff
+    else:
+        return 0
+
+
 @cached(TTLCache(1, 5))
 async def get_live_info() -> LiveInfo:
+    default_event_index = 0
     async with aiohttp.ClientSession(headers=config.oss_headers, timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.get(config.live_info_url) as response:
             data = json.loads(await response.text())['eventData']
@@ -75,28 +101,31 @@ async def get_live_info() -> LiveInfo:
                 "live": False,
                 "streams": {}
             }
+            zoneName = 'Not Got'
             ok = False
             for live_info in data:
                 if live_info['liveState'] != 1 or live_info['matchState'] != 1:
                     continue
                 ok = True
                 info['live'] = True
-                mainStream = live_string_to_dict(live_info['zoneLiveString'])
-                if mainStream:
-                    info['streams']['主视角'] = mainStream
-                for fpv in live_info['fpvData']:
-                    stream = live_string_to_dict(fpv['sources'])
-                    if stream:
-                        info['streams'][fpv['role']] = stream
+                zoneName = live_info['zoneName']
+                convert_live_info(live_info, info)
             if not ok:
-                live_info = data[4]
-                mainStream = live_string_to_dict(live_info['zoneLiveString'])
-                if mainStream:
-                    info['streams']['主视角'] = mainStream
-                for fpv in live_info['fpvData']:
-                    stream = live_string_to_dict(fpv['sources'])
-                    if stream:
-                        info['streams'][fpv['role']] = stream
+                live_info = data[default_event_index]
+                min_date_diff = 99999
+                for _live_info in data:
+                    date_diff = check_date_position(_live_info['zoneDate'])
+                    if date_diff == 0:
+                        break
+                    if date_diff == -1:
+                        continue
+                    if date_diff < min_date_diff:
+                        min_date_diff = date_diff
+                        live_info = _live_info
+
+                convert_live_info(live_info, info)
+                zoneName = live_info['zoneName']
+            print(f"Got {zoneName} Live Info")
             return LiveInfo(**info)
 
 
@@ -215,7 +244,9 @@ class Manager:
             else:
                 downloaders.append(DownloaderInfo(
                     name=role,
-                    status=(self.manual_mode or (self.round.status == 'STARTED' and len(downloader.segments) > 0)),
+                    status=(self.manual_mode or (self.round is not None and
+                                                 self.round.status == 'STARTED' and
+                                                 len(downloader.segments) > 0)),
                     error_count=downloader.error_count,
                     quality=self.get_req(role).quality,
                     recorded=round(sum([it.duration for it in downloader.segments]))
