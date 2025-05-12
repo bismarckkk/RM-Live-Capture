@@ -194,7 +194,7 @@ class Index extends Component {
                                     <h2 style={{color: 'red'}}>Manual Mode</h2>
                                     <div>Automatic slicing has been turned off</div>
                                 </div> :
-                                this.state.live.live ?
+                                this.state.live.live || this.state.round.status !== "IDLE" ?
                                     <div>
                                         {
                                             this.state.round.status === "IDLE" ?
