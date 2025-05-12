@@ -49,10 +49,22 @@ async def get_round_info() -> RoundInfo:
                 data = data['currentMatch']
                 if data is None:
                     continue
+                round = data['round']
+                if round is None:
+                    round = 0
+                if data['redSide']['player'] is None:
+                    info = RoundInfo(**{
+                        "red": data['redSideId'],
+                        "blue": data['blueSideId'],
+                        "round": round,
+                        "id": data['id'],
+                        "status": data['status']
+                    })
+                    break
                 info = RoundInfo(**{
                     "red": data['redSide']['player']['team']['collegeName'],
                     "blue": data['blueSide']['player']['team']['collegeName'],
-                    "round": data['round'],
+                    "round": round,
                     "id": data['id'],
                     "status": data['status']
                 })
@@ -122,7 +134,6 @@ async def get_live_info() -> LiveInfo:
                     if date_diff < min_date_diff:
                         min_date_diff = date_diff
                         live_info = _live_info
-
                 convert_live_info(live_info, info)
                 zoneName = live_info['zoneName']
             print(f"Got {zoneName} Live Info")
@@ -181,6 +192,7 @@ class Manager:
     async def _scan(self):
         self.logger.info("Scanning...")
         live_info = await get_live_info()
+        round_ = await get_round_info()
         for req in self.reqs:
             stream = live_info.streams.get(req.role, {}).get(req.quality)
             if stream is not None:
@@ -190,7 +202,7 @@ class Manager:
                     self.downloaders[req.role].url = stream
 
         if not self.manual_mode:
-            if not live_info.live:
+            if not (live_info.live or round_.status != 'IDLE'):
                 if self.status == 'STARTED':
                     for downloader in self.downloaders.values():
                         if downloader is not None:
@@ -203,7 +215,6 @@ class Manager:
                     self.round.status = 'IDLE'
                 self.job.reschedule(trigger="interval", seconds=10)
 
-            round_ = await get_round_info()
             if self.round is None or round_ != self.round:
                 self.round = round_
                 if self.round.status == 'STARTED':
